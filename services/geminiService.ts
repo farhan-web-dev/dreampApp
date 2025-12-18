@@ -76,6 +76,17 @@ export const generatePreWeddingPhoto = async (
   styleDescription: string,
   customPrompt?: string
 ): Promise<string> => {
+  // MOCK MODE CHECK
+  if (import.meta.env.VITE_USE_MOCK === 'true') {
+    console.log("Mock Mode Active: Returning placeholder image.");
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Simple grey placeholder image (1x1 pixel)
+        resolve("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKwKwQAAAABJRU5ErkJggg==");
+      }, 2000); // Simulate 2s latency
+    });
+  }
+
   try {
     const ai = getAiClient();
     const parts = [];

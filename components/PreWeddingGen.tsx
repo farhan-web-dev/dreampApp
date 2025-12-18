@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { generatePreWeddingPhoto } from '../services/geminiService';
 import { fileToBase64, getMimeType } from '../utils/fileUtils';
+import { addWatermark } from '../utils/imageUtils';
 import { VIBES } from '../constants';
 import { Camera, Heart, Sparkles, Plus, X, Loader2, Download, History, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface UploadedFile {
   file: File;
@@ -82,12 +84,15 @@ const PreWeddingGen: React.FC = () => {
         : styleDesc;
 
       const result = await generatePreWeddingPhoto(references, finalPrompt, dressPhoto ? "Include the style of the uploaded dress." : undefined);
-      setGeneratedImage(result);
-      setHistory(prev => [result, ...prev]);
+      const watermarkedResult = await addWatermark(result, "MoonVeil Studio");
+      
+      setGeneratedImage(watermarkedResult);
+      setHistory(prev => [watermarkedResult, ...prev]);
+      toast.success("Photo generated successfully!");
 
     } catch (error) {
       console.error(error);
-      alert("Failed to generate photo. Please try again.");
+      toast.error("Failed to generate photo. Please try again.");
     } finally {
       setIsGenerating(false);
     }

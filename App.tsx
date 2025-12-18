@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PreWeddingGen from './components/PreWeddingGen';
+import { Toaster } from 'sonner';
 import { Heart } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -56,7 +57,8 @@ const App: React.FC = () => {
             </a>
           </div>
         </div>
-      </div>
+    <Toaster richColors position="top-center" />
+    </div>
     );
   }
 
@@ -89,6 +91,7 @@ const App: React.FC = () => {
       <footer className="border-t border-slate-800 py-6 text-center text-slate-500 text-sm bg-slate-900">
         <p>&copy; {new Date().getFullYear()} MoonVeilStudio. Powered by MoonVeilStudio IT.</p>
       </footer>
+      <Toaster richColors position="top-center" />
     </div>
   );
 };
