@@ -6,8 +6,24 @@ const EDIT_MODEL_NANO = 'gemini-2.5-flash-image';
 const GEN_MODEL_HIGH_QUALITY = 'gemini-3-pro-image-preview';
 
 // Helper to get a new AI client instance (important for picking up updated API keys)
+// Helper to get a new AI client instance (important for picking up updated API keys)
 const getAiClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const isTest = process.env.VITE_TEST_MODE === 'true';
+  
+  // STRATEGY: 
+  // - In Test Mode: Use Free Key (for Chat/Edit) to save cost.
+  // - In Prod Mode: Use Paid Key (for high reliability/rate limits).
+  const apiKey = isTest 
+    ? (process.env.GEMINI_FREE_KEY || process.env.GEMINI_API_KEY) 
+    : (process.env.GEMINI_PAID_KEY || process.env.GEMINI_API_KEY);
+    
+  if (!apiKey) {
+    console.warn("No API Key found for mode:", isTest ? "TEST (Free)" : "PROD (Paid)");
+  } else {
+    console.log(`Using API Key (${isTest ? 'Free/Test' : 'Paid/Prod'}): ...${apiKey.slice(-4)}`);
+  }
+
+  return new GoogleGenAI({ apiKey: apiKey || '' });
 };
 
 /**
@@ -71,20 +87,17 @@ export const editImage = async (
  * Generate Pre-wedding photo using Gemini 3 Pro Image Preview
  * This treats the task as a high-fidelity image-to-image/generation task.
  */
+
+const TEST_MODE = process.env.VITE_TEST_MODE === "true";
 export const generatePreWeddingPhoto = async (
   referenceImages: { base64: string; mimeType: string }[],
   styleDescription: string,
   customPrompt?: string
 ): Promise<string> => {
   // MOCK MODE CHECK
-  if (import.meta.env.VITE_USE_MOCK === 'true') {
-    console.log("Mock Mode Active: Returning placeholder image.");
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Simple grey placeholder image (1x1 pixel)
-        resolve("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKwKwQAAAABJRU5ErkJggg==");
-      }, 2000); // Simulate 2s latency
-    });
+  if (TEST_MODE) {
+    console.log("TEST MODE: Returning mock image");
+    return `https://picsum.photos/512?random=${Date.now()}`;
   }
 
   try {
