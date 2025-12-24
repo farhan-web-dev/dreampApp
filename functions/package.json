@@ -13,7 +13,6 @@
     "logs": "firebase functions:log"
   },
   "dependencies": {
-    "cors": "^2.8.5",
     "firebase-functions": "^5.1.0"
   }
 }
