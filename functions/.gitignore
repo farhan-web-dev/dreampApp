@@ -1,0 +1,5 @@
+# Firebase
+node_modules/
+.env
+firebase-debug.log
+config.json

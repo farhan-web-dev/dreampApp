@@ -26,29 +26,29 @@ export const addWatermark = (base64Image: string, text: string): Promise<string>
       ctx.drawImage(img, 0, 0);
 
       // Configure watermark style
-      // Scale font size based on image width (e.g., 3% of width)
-      const fontSize = Math.max(24, Math.floor(canvas.width * 0.03)); 
+      // Calculate diagonal length to size text appropriately
+      const diagonal = Math.sqrt(Math.pow(canvas.width, 2) + Math.pow(canvas.height, 2));
+      const fontSize = Math.floor(diagonal * 0.1); // Font size 10% of diagonal
+      
       ctx.font = `bold ${fontSize}px sans-serif`;
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'bottom';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
 
-      // Margins
-      const marginX = Math.floor(canvas.width * 0.02);
-      const marginY = Math.floor(canvas.height * 0.02);
-
-      const x = canvas.width - marginX;
-      const y = canvas.height - marginY;
-
-      // Add shadow/outline for readability on any background
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 4;
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-      ctx.strokeText(text, x, y);
+      // Save context state for rotation
+      ctx.save();
+      
+      // Move to center of canvas
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      
+      // Rotate -45 degrees (in radians)
+      ctx.rotate(-Math.PI / 4);
 
       // Draw text
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.fillText(text, x, y);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'; // White with 30% opacity
+      ctx.fillText(text, 0, 0);
+
+      // Restore context state
+      ctx.restore();
 
       // Export to base64
       resolve(canvas.toDataURL('image/png'));

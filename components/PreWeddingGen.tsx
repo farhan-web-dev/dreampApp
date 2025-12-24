@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { generatePreWeddingPhoto } from '../services/geminiService';
+// import { generatePreWeddingPhoto } from '../services/geminiService'; // Removed in favor of Firebase Function
 import { fileToBase64, getMimeType } from '../utils/fileUtils';
 import { addWatermark } from '../utils/imageUtils';
 import { VIBES } from '../constants';
@@ -83,7 +83,32 @@ const PreWeddingGen: React.FC = () => {
         ? `${customDescription} (Vibe: ${selectedVibe?.title || 'Custom'})` 
         : styleDesc;
 
-      const result = await generatePreWeddingPhoto(references, finalPrompt, dressPhoto ? "Include the style of the uploaded dress." : undefined);
+      // Call Firebase Function
+      // const result = await generatePreWeddingPhoto(references, finalPrompt, dressPhoto ? "Include the style of the uploaded dress." : undefined);
+      
+      const functionUrl = "https://generatepreweddingphoto-5ygtzea37q-uc.a.run.app"; 
+      
+      const payload = {
+          referenceImages: references,
+          styleDescription: finalPrompt,
+          customPrompt: dressPhoto ? "Include the style of the uploaded dress." : undefined
+      };
+
+      const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to generate image');
+      }
+
+      const data = await response.json();
+      const result = data.image;
       const watermarkedResult = await addWatermark(result, "MoonVeil Studio");
       
       setGeneratedImage(watermarkedResult);
