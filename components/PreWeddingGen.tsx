@@ -5,6 +5,10 @@ import { addWatermark } from '../utils/imageUtils';
 import { VIBES } from '../constants';
 import { Camera, Heart, Sparkles, Plus, X, Loader2, Download, History, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getFunctions, httpsCallable } from "firebase/functions";
+import app from '../firebase'; // your initialized Firebase app
+
+
 
 interface UploadedFile {
   file: File;
@@ -61,67 +65,53 @@ const PreWeddingGen: React.FC = () => {
   };
 
   const handleGenerate = async () => {
-    if (couplePhotos.length === 0) return;
-    
-    setIsGenerating(true);
-    setGeneratedImage(null);
+  if (couplePhotos.length === 0) return;
 
-    try {
-      // Collect references
-      const references = couplePhotos.map(p => ({ base64: p.base64, mimeType: p.mimeType }));
-      if (dressPhoto) {
-        references.push({ base64: dressPhoto.base64, mimeType: dressPhoto.mimeType });
-      }
+  setIsGenerating(true);
+  setGeneratedImage(null);
 
-      // Determine style
-      const selectedVibe = VIBES.find(v => v.id === selectedVibeId);
-      const styleDesc = selectedVibe 
-        ? `${selectedVibe.title}. ${selectedVibe.description}` 
-        : customDescription || "Professional cinematic pre-wedding portrait";
-
-      const finalPrompt = customDescription 
-        ? `${customDescription} (Vibe: ${selectedVibe?.title || 'Custom'})` 
-        : styleDesc;
-
-      // Call Firebase Function
-      // const result = await generatePreWeddingPhoto(references, finalPrompt, dressPhoto ? "Include the style of the uploaded dress." : undefined);
-      
-      const functionUrl = "https://generatepreweddingphoto-5ygtzea37q-uc.a.run.app"; 
-      
-      const payload = {
-          referenceImages: references,
-          styleDescription: finalPrompt,
-          customPrompt: dressPhoto ? "Include the style of the uploaded dress." : undefined
-      };
-
-      const response = await fetch(functionUrl, {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to generate image');
-      }
-
-      const data = await response.json();
-      const result = data.image;
-      const watermarkedResult = await addWatermark(result, "MoonVeil Studio");
-      
-      setGeneratedImage(watermarkedResult);
-      setHistory(prev => [watermarkedResult, ...prev]);
-      toast.success("Photo generated successfully!");
-
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to generate photo. Please try again.");
-    } finally {
-      setIsGenerating(false);
+  try {
+    // Collect references
+    const references = couplePhotos.map(p => ({ base64: p.base64, mimeType: p.mimeType }));
+    if (dressPhoto) {
+      references.push({ base64: dressPhoto.base64, mimeType: dressPhoto.mimeType });
     }
-  };
+
+    // Determine style
+    const selectedVibe = VIBES.find(v => v.id === selectedVibeId);
+    const styleDesc = selectedVibe 
+      ? `${selectedVibe.title}. ${selectedVibe.description}` 
+      : customDescription || "Professional cinematic pre-wedding portrait";
+
+    const finalPrompt = customDescription 
+      ? `${customDescription} (Vibe: ${selectedVibe?.title || 'Custom'})` 
+      : styleDesc;
+
+    // Get Firebase functions instance
+    const functions = getFunctions(app, "us-central1");
+    const generatePreWeddingPhoto = httpsCallable(functions, "generatePreWeddingPhoto");
+
+    // Call callable function
+    const result = await generatePreWeddingPhoto({
+      referenceImages: references,
+      styleDescription: finalPrompt,
+      customPrompt: dressPhoto ? "Include the style of the uploaded dress." : undefined
+    });
+
+    const watermarkedResult = await addWatermark(result.data.image, "MoonVeil Studio");
+
+    setGeneratedImage(watermarkedResult);
+    setHistory(prev => [watermarkedResult, ...prev]);
+    toast.success("Photo generated successfully!");
+    
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to generate photo. Please try again.");
+  } finally {
+    setIsGenerating(false);
+  }
+};
+
 
   return (
     <div className="max-w-6xl mx-auto pb-12">
