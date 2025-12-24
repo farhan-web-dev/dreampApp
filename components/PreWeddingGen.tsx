@@ -104,10 +104,10 @@ const PreWeddingGen: React.FC = () => {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to generate image');
     }
-
     const data = await response.json();
+    console.log(data);
     const result = data.image;
-    console.log(result,data);
+    console.log(result);
     const watermarkedResult = await addWatermark(result, "MoonVeil Studio");
 
     setGeneratedImage(watermarkedResult);
