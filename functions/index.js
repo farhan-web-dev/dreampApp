@@ -1,97 +1,120 @@
 import { onRequest } from "firebase-functions/v2/https";
-import logger from "firebase-functions/logger";
+import * as logger from "firebase-functions/logger";
+import { GoogleGenAI } from "@google/genai";
+import admin from "firebase-admin";
 
-const MODEL = "gemini-1.5-pro";
-const TEST_MODE= true;
+if (!admin.apps.length) {
+  admin.initializeApp({
+    storageBucket: "upproject-e886b.firebasestorage.app" // <--- your bucket
+  });
+}
+
+
 
 export const generatePreWeddingPhoto = onRequest(
   {
     timeoutSeconds: 300,
     region: "us-central1",
     cors: true,
-    // secrets: ["GEMINI_FREE_KEY", "GEMINI_TEST_MODE"],
   },
   async (req, res) => {
-      if (TEST_MODE) {
-        const mockImage = `https://picsum.photos/512?random=${Date.now()}`;
-
-        return res.json({
-          success: true,
-          image: mockImage,
-          testMode: true,
-        });
-      }
     try {
-      // const isTest = process.env.GEMINI_TEST_MODE === "true";
-      // const apiKey = process.env.GEMINI_FREE_KEY;
-      const apiKey = "AIzaSyBdGfoTwwil8JJkNzF_zgkTrC9-bHdmv1o";
+      // ✅ DEFINE BUCKET HERE
+      const bucket = admin.storage().bucket();
 
-      if (!apiKey) {
-        throw new Error("Missing Gemini API key");
-      }
+      // ⚠️ TEMP — move to Secret Manager later
+      const geminiKey = "AIzaSyAakziG2mnnWwH3MZ1ZAkcM4CTT0lp5iFg";
 
       const { referenceImages, styleDescription, customPrompt } = req.body;
 
-      if (!Array.isArray(referenceImages) || referenceImages.length === 0) {
-        return res.status(400).json({ error: "Missing reference images" });
+      if (!referenceImages || !Array.isArray(referenceImages)) {
+        return res.status(400).json({ error: "referenceImages array required" });
       }
 
-      const parts = referenceImages.map((img) => {
-        const base64 = img.base64.includes("base64,")
-          ? img.base64.split("base64,")[1]
-          : img.base64;
+      const ai = new GoogleGenAI({ apiKey: geminiKey });
 
-        return {
-          inline_data: {
-            mime_type: img.mimeType || "image/jpeg",
-            data: base64,
+      const promptParts = [
+        {
+          text: `
+You are a professional cinematic wedding photographer.
+
+TASK:
+Generate a cinematic pre-wedding photo based on the provided reference images.
+
+IMPORTANT:
+- Preserve faces, skin tone, body shape, and identity of the couple
+- Do NOT change age or gender
+- Use outfit image only as style reference if provided
+
+QUALITY:
+- DSLR realism
+- Cinematic lighting
+- Romantic mood
+- Ultra realistic
+- No text in image
+- 4K quality
+
+STYLE:
+${styleDescription || "romantic cinematic"}
+
+${customPrompt || ""}
+          `,
+        },
+      ];
+
+      for (const img of referenceImages) {
+        if (!img.base64 || !img.mimeType) continue;
+
+        promptParts.push({
+          inlineData: {
+            mimeType: img.mimeType,
+            data: img.base64.includes("base64,")
+              ? img.base64.split("base64,")[1]
+              : img.base64,
           },
-        };
+        });
+      }
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-image",
+        contents: promptParts,
       });
 
-      let prompt = `
-Generate a cinematic, photorealistic pre-wedding photo.
-Preserve facial identity from reference images.
-Style: ${styleDescription}
-4K quality, professional lighting.
-      `;
+      let generatedBase64 = null;
 
-      if (customPrompt) prompt += `\nAdditional details: ${customPrompt}`;
-
-      parts.push({ text: prompt });
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ role: "user", parts }],
-          }),
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData?.data) {
+          generatedBase64 = part.inlineData.data;
+          break;
         }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        logger.error("Gemini API error", data);
-        return res.status(500).json({ error: data });
       }
 
-      const imagePart =
-        data.candidates?.[0]?.content?.parts?.find((p) => p.inline_data);
-
-      if (!imagePart) {
-        return res.status(500).json({ error: "No image generated" });
+      if (!generatedBase64) {
+        throw new Error("No image returned by Gemini");
       }
+
+      const buffer = Buffer.from(generatedBase64, "base64");
+      const filePath = `prewedding/${Date.now()}.png`;
+      const file = bucket.file(filePath);
+
+      await file.save(buffer, {
+        contentType: "image/png",
+        public: true,
+      });
+
+      const imageUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
 
       return res.json({
         success: true,
-        image: `data:image/png;base64,${imagePart.inline_data.data}`,
+        image: imageUrl,
       });
+    
+
     } catch (err) {
-      logger.error("Function error", err);
-      return res.status(500).json({ error: err.message });
+      logger.error("PreWedding Error", err);
+      return res.status(500).json({
+        error: err.message || "Internal error",
+      });
     }
   }
 );

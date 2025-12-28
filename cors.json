@@ -1,0 +1,11 @@
+[
+  {
+    "origin": ["http://localhost:3000"],
+    "method": ["GET"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]
+
+
+// gsutil cors set cors.json gs://upproject-e886b.firebasestorage.app

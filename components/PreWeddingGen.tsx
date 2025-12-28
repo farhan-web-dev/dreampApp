@@ -102,7 +102,11 @@ const PreWeddingGen: React.FC = () => {
 
     if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate image');
+        const errorMessage = typeof errorData.error === 'object' 
+          ? JSON.stringify(errorData.error) 
+          : errorData.error || 'Failed to generate image';
+        console.error("API Error Details:", errorData);
+        throw new Error(errorMessage);
     }
     const data = await response.json();
     console.log(data);

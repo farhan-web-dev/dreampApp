@@ -37,3 +37,17 @@ This document summarizes all changes made to the project to resolve errors and i
 - **Modified `components/PreWeddingGen.tsx`**:
   - Replaced `alert()` calls with `toast.error()`.
   - Added `toast.success()` for successful photo generation.
+
+## 5. Migrated to Firebase Cloud Functions
+**Architecture Change:** Moved the Gemini API interaction from a client-side service to a secure serverless backend.
+**Changes:**
+- **Created `functions/index.js`**:
+  - Implemented `generatePreWeddingPhoto` as a Firebase v2 `onRequest` function.
+  - Secured the Gemini API key on the backend.
+  - Validates input and handles errors before calling the Gemini API.
+  - Returns the generated image in Base64 format.
+  - Configured with `cors: true` to allow requests from the frontend.
+- **Modified `components/PreWeddingGen.tsx`**:
+  - Deprecated/Removed direct reliance on `geminiService.ts`.
+  - Implemented a direct `fetch` call to the deployed Firebase function URL.
+  - Properly handles the JSON response, errors, and displaying the generated image.
