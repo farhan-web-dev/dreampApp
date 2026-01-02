@@ -1,5 +1,6 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import { defineSecret } from "firebase-functions/params";
 import { GoogleGenAI } from "@google/genai";
 import admin from "firebase-admin";
 
@@ -9,21 +10,22 @@ if (!admin.apps.length) {
   });
 }
 
-
+// const geminiKey = defineSecret("GEMINI_FREE_KEY");
+const geminiKey = "AIzaSyD2ZoNvZoNvZoNvZoNvZoNvZoNvZoNvZo";
 
 export const generatePreWeddingPhoto = onRequest(
   {
     timeoutSeconds: 300,
     region: "us-central1",
     cors: true,
+    // secrets: [geminiKey],
   },
   async (req, res) => {
     try {
       // ✅ DEFINE BUCKET HERE
       const bucket = admin.storage().bucket();
 
-      // ⚠️ TEMP — move to Secret Manager later
-      const geminiKey = "AIzaSyAakziG2mnnWwH3MZ1ZAkcM4CTT0lp5iFg";
+      const key = geminiKey.value();
 
       const { referenceImages, styleDescription, customPrompt } = req.body;
 
@@ -31,6 +33,7 @@ export const generatePreWeddingPhoto = onRequest(
         return res.status(400).json({ error: "referenceImages array required" });
       }
 
+      // const ai = new GoogleGenAI({ apiKey: key });
       const ai = new GoogleGenAI({ apiKey: geminiKey });
 
       const promptParts = [
