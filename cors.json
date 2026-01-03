@@ -1,11 +1,8 @@
 [
   {
-    "origin": ["http://localhost:3000"],
+    "origin": ["http://localhost:3000", "https://dreamp-app.vercel.app/"],
     "method": ["GET"],
     "responseHeader": ["Content-Type"],
     "maxAgeSeconds": 3600
   }
 ]
-
-
-// gsutil cors set cors.json gs://upproject-e886b.firebasestorage.app
