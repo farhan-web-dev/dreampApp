@@ -6,12 +6,12 @@ import admin from "firebase-admin";
 
 if (!admin.apps.length) {
   admin.initializeApp({
-    storageBucket: "upproject-e886b.firebasestorage.app" // <--- your bucket
+    storageBucket: "dreamapp-c833c.firebasestorage.app", // <--- your bucket
   });
 }
 
 // const geminiKey = defineSecret("GEMINI_FREE_KEY");
-const geminiKey = "AIzaSyD2ZoNvZoNvZoNvZoNvZoNvZoNvZoNvZo";
+const geminiKey = "AIzaSyAsTakbPM8su2X0cC9vrt6t7TQaCpopn6Q";
 
 export const generatePreWeddingPhoto = onRequest(
   {
@@ -25,12 +25,14 @@ export const generatePreWeddingPhoto = onRequest(
       // ✅ DEFINE BUCKET HERE
       const bucket = admin.storage().bucket();
 
-      const key = geminiKey.value();
+      // const key = geminiKey.value();
 
       const { referenceImages, styleDescription, customPrompt } = req.body;
 
       if (!referenceImages || !Array.isArray(referenceImages)) {
-        return res.status(400).json({ error: "referenceImages array required" });
+        return res
+          .status(400)
+          .json({ error: "referenceImages array required" });
       }
 
       // const ai = new GoogleGenAI({ apiKey: key });
@@ -111,8 +113,6 @@ ${customPrompt || ""}
         success: true,
         image: imageUrl,
       });
-    
-
     } catch (err) {
       logger.error("PreWedding Error", err);
       return res.status(500).json({
